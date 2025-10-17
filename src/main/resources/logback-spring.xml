@@ -1,0 +1,17 @@
+<!-- src/main/resources/logback-spring.xml -->
+<configuration>
+  <property name="PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %X{reqId:-????} %logger{36} - %msg%n"/>
+
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>${PATTERN}</pattern>
+    </encoder>
+  </appender>
+
+  <logger name="org.hibernate.SQL" level="INFO"/>
+  <logger name="org.hibernate.type.descriptor.sql" level="WARN"/>
+
+  <root level="INFO">
+    <appender-ref ref="CONSOLE"/>
+  </root>
+</configuration>

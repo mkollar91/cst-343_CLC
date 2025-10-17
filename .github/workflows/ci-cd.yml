@@ -1,0 +1,64 @@
+name: CI/CD – Build & Deploy to Azure App Service
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+env:
+  AZURE_WEBAPP_NAME: cst323springboot-bthmbahddeehhkhn   # <-- your app service name
+  JAVA_VERSION: "17"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      - name: Build with Maven
+        run: |
+          ./mvnw -B -DskipTests clean package
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-jar
+          path: target/*.jar
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://${{ env.AZURE_WEBAPP_NAME }}.eastus2-01.azurewebsites.net
+
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: app-jar
+          path: build
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: build/*.jar
+
+      # Optional: quick health check after deploy
+      - name: Check health endpoint
+        run: |
+          set -e
+          # give the app a few seconds to restart
+          sleep 15
+          curl -f https://${{ env.AZURE_WEBAPP_NAME }}.eastus2-01.azurewebsites.net/actuator/health
